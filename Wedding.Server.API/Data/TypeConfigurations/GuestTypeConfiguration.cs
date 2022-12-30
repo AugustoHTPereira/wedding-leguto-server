@@ -11,5 +11,7 @@ public class GuestTypeConfiguration : IEntityTypeConfiguration<Guest>
         builder.ToTable("Guests");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).HasColumnType("varchar(255)");
+        builder.Property(x => x.Code).IsRequired().HasColumnType("char(6)");
+        builder.HasIndex(x => x.Code).IsUnique();
     }
 }

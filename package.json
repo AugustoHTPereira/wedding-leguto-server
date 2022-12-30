@@ -1,0 +1,12 @@
+{
+  "name": "Wedding.Server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:AugustoHTPereira/wedding-leguto-server.git",
+  "author": "Augusto Pereira <augustohtp8@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "export ASPNETCORE_ENVIRONMENT=Development && dotnet watch run --project Wedding.Server.API",
+    "start": "export ASPNETCORE_ENVIRONMENT=Production && dotnet watch run --project Wedding.Server.API"
+  }
+}
