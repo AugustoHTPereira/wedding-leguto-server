@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<SqlServerOptions>(options => options.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection"));
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOptions"));
+builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("StorageOptions"));
 
 builder.Services.AddDbContext<ApplicationDbContext>();
 builder.Services.AddApplicationRepositories();
