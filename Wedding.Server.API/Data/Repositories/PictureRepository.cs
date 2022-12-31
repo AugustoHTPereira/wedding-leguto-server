@@ -39,6 +39,11 @@ public class PictureRepository : IPictureRepository
 
     public async Task<IEnumerable<GuestPicture>> SelectPublicRandomAsync(int count)
     {
-        return await _context.GuestPictures.Where(x => x.Public).OrderBy(x => Guid.NewGuid()).Take(count).ToListAsync();
+        return await _context.GuestPictures
+            .Where(x => x.Public)
+            .OrderBy(x => Guid.NewGuid())
+            .Take(count)
+            .Include(x => x.Guest)
+            .ToListAsync();
     }
 }

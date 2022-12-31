@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Wedding.Server.API.Controllers.Base;
 using Wedding.Server.API.Controllers.DefaultResponses;
 using Wedding.Server.API.Controllers.Requests;
+using Wedding.Server.API.Controllers.Responses.GuestPicture;
 using Wedding.Server.API.Data.Repositories;
 using Wedding.Server.API.Models;
 using Wedding.Server.API.Services;
@@ -31,6 +32,7 @@ public class PictureController : APIControllerBase
 
         foreach (var picture in request.Pictures)
         {   
+            string fileKey = $"{Guid.NewGuid()}{Path.GetExtension(picture.File.FileName)}";
             var guestPicture = new GuestPicture
             {
                 ContentType = picture.File.ContentType,
@@ -38,13 +40,13 @@ public class PictureController : APIControllerBase
                 {
                     Id = Id
                 },
-                Name = picture.File.FileName,
+                Name = fileKey,
                 Public = picture.Public,
                 Size = picture.File.Length,
                 BucketName = "wedding-guest-photos",
             };
 
-            guestPicture.StorageObjectId = await _storageService.StoreAsync(picture.File, guestPicture.BucketName);
+            guestPicture.StorageObjectId = await _storageService.StoreAsync(fileKey, picture.File, guestPicture.BucketName);
             if (!string.IsNullOrEmpty(guestPicture.StorageObjectId))
             {
                 await _pictureRepository.InsertAsync(guestPicture);
@@ -52,5 +54,20 @@ public class PictureController : APIControllerBase
         }
         
         return Ok();
+    }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> OnGetRandomPublicPictures()
+    {
+        var pictures = await _pictureRepository.SelectPublicRandomAsync(10);
+
+        var response = pictures.Select(pic => new PictureResponse
+        {
+            Owner = pic.Guest.Name,
+            PublicUrl = _storageService.GetUrlAsync(pic.Name, pic.BucketName),
+        });
+
+        return Ok(response);
     }
 }

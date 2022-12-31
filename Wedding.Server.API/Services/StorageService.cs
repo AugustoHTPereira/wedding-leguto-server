@@ -7,7 +7,7 @@ namespace Wedding.Server.API.Services;
 
 public interface IStorageService
 {
-    Task<string> StoreAsync(IFormFile file, string bucketName);
+    Task<string> StoreAsync(string key, IFormFile file, string bucketName);
     string GetUrlAsync(string fileName, string bucketName);
 }
 
@@ -28,19 +28,20 @@ public class S3StorageService : IStorageService
         {
             BucketName = bucketName,
             Key = fileName,
+            Expires = DateTime.Now.AddHours(1)
         };
 
         var signedUrl = _client.GetPreSignedURL(request);
         return signedUrl;
     }
 
-    public async Task<string> StoreAsync(IFormFile file, string bucketName)
+    public async Task<string> StoreAsync(string key, IFormFile file, string bucketName)
     {
         var fileStream = file.OpenReadStream();
         var request = new PutObjectRequest
         {
             BucketName = bucketName,
-            Key = file.FileName,
+            Key = key,
             InputStream = fileStream,
             ContentType = file.ContentType,
             // CannedACL = S3CannedACL.PublicRead,
