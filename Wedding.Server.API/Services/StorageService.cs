@@ -8,7 +8,8 @@ namespace Wedding.Server.API.Services;
 public interface IStorageService
 {
     Task<string> StoreAsync(string key, IFormFile file, string bucketName);
-    string GetUrlAsync(string fileName, string bucketName);
+    Task DeleteAsync(string key, string bucketName);
+    string GetUrlAsync(string key, string bucketName);
 }
 
 public class S3StorageService : IStorageService
@@ -22,12 +23,23 @@ public class S3StorageService : IStorageService
         _client = new AmazonS3Client(_options.AccessKey, _options.SecretKey, Amazon.RegionEndpoint.USEast1);
     }
 
-    public string GetUrlAsync(string fileName, string bucketName)
+    public async Task DeleteAsync(string key, string bucketName)
+    {
+        var request = new DeleteObjectRequest
+        {
+            Key = key,
+            BucketName = bucketName,
+        };
+
+        var response = await _client.DeleteObjectAsync(request);
+    }
+
+    public string GetUrlAsync(string key, string bucketName)
     {
         var request = new GetPreSignedUrlRequest
         {
             BucketName = bucketName,
-            Key = fileName,
+            Key = key,
             Expires = DateTime.Now.AddHours(1)
         };
 

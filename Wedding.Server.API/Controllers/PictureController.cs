@@ -1,6 +1,3 @@
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Wedding.Server.API.Controllers.Base;
@@ -66,7 +63,15 @@ public class PictureController : APIControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> OnGetRandomPublicPictures()
+    public async Task<IActionResult> OnGet([FromQuery] int guestId)
+    {
+        if (guestId == 0)
+            return await OnGetRandomPublicPictures();
+        else
+            return await OnGetGuestPictures(guestId, !IsLoggedIn);
+    }
+
+    protected async Task<IActionResult> OnGetRandomPublicPictures()
     {
         var pictures = await _pictureRepository.SelectPublicRandomAsync(10);
 
@@ -78,11 +83,66 @@ public class PictureController : APIControllerBase
             {
                 Owner = picture.Guest.Name,
                 OriginalUrl = originalUrl,
+                Id = picture.Id,
             };
             
             resp.Add(pr);
         }
 
         return Ok(resp);
+    }
+
+    protected async Task<IActionResult> OnGetGuestPictures(int guestId, bool onlyPublic)
+    {
+        var pictures = await _pictureRepository.SelectAllByGuestAsync(guestId, onlyPublic);
+
+        IList<PictureResponse> resp = new List<PictureResponse>();
+        foreach (var picture in pictures)
+        {
+            string originalUrl = _storageService.GetUrlAsync(picture.Name, picture.BucketName);
+            var pr = new PictureResponse
+            {
+                Owner = picture.Guest.Name,
+                OriginalUrl = originalUrl,
+                Id = picture.Id,
+            };
+            
+            resp.Add(pr);
+        }
+
+        return Ok(resp);
+    }
+
+    [Authorize]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> OnDeleteAsync([FromRoute] int id)
+    {
+        var picture = await _pictureRepository.SelectAsync(id);
+        if (picture == null)
+            return NotFound();
+            
+        if (picture.Guest.Id != Id)
+        {
+            return Forbid();
+        }
+
+        await _storageService.DeleteAsync(picture.Name, picture.BucketName);
+        await _pictureRepository.DeleteAsync(picture);
+        return Ok();
+    }
+
+    [Authorize]
+    [HttpPut("{id}/TogglePrivacy")]
+    public async Task<IActionResult> OnUpdateAsync([FromRoute] int id)
+    {
+        var picture = await _pictureRepository.SelectAsync(id);
+        if (picture.Guest.Id != Id)
+        {
+            return Forbid();
+        }
+
+        picture.Public = !picture.Public;
+        await _pictureRepository.UpdateAsync(picture);
+        return Ok();
     }
 }
