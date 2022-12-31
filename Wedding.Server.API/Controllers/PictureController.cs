@@ -1,3 +1,6 @@
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Wedding.Server.API.Controllers.Base;
@@ -31,6 +34,12 @@ public class PictureController : APIControllerBase
         }
 
         foreach (var picture in request.Pictures)
+        {
+            if (!picture.File.ContentType.Contains("image"))
+                return BadRequestResponse.CreateResponse($"File type {picture.File.ContentType} is not supported");
+        }
+
+        foreach (var picture in request.Pictures)
         {   
             string fileKey = $"{Guid.NewGuid()}{Path.GetExtension(picture.File.FileName)}";
             var guestPicture = new GuestPicture
@@ -43,7 +52,7 @@ public class PictureController : APIControllerBase
                 Name = fileKey,
                 Public = picture.Public,
                 Size = picture.File.Length,
-                BucketName = "wedding-guest-photos",
+                BucketName = "wedding-guest-photos",    
             };
 
             guestPicture.StorageObjectId = await _storageService.StoreAsync(fileKey, picture.File, guestPicture.BucketName);
@@ -56,18 +65,24 @@ public class PictureController : APIControllerBase
         return Ok();
     }
 
-    [Authorize]
     [HttpGet]
     public async Task<IActionResult> OnGetRandomPublicPictures()
     {
         var pictures = await _pictureRepository.SelectPublicRandomAsync(10);
 
-        var response = pictures.Select(pic => new PictureResponse
+        IList<PictureResponse> resp = new List<PictureResponse>();
+        foreach (var picture in pictures)
         {
-            Owner = pic.Guest.Name,
-            PublicUrl = _storageService.GetUrlAsync(pic.Name, pic.BucketName),
-        });
+            string originalUrl = _storageService.GetUrlAsync(picture.Name, picture.BucketName);
+            var pr = new PictureResponse
+            {
+                Owner = picture.Guest.Name,
+                OriginalUrl = originalUrl,
+            };
+            
+            resp.Add(pr);
+        }
 
-        return Ok(response);
+        return Ok(resp);
     }
 }
