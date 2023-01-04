@@ -457,3 +457,6 @@ appsettings.*.json
 !appsettings.Example.json
 
 [Dd]ist
+
+qrcodes
+invites
