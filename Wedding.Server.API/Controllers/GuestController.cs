@@ -63,6 +63,7 @@ public class GuestController : APIControllerBase
     public async Task<IActionResult> GenerateQrCodes()
     {
         var guests = await _guestRepository.SelectAsync();
+        Console.WriteLine($"Generating {guests.Count()} qrcodes");
         var qrCodes = guests.Select(x => new {
             FileName = $"qrcode-{x.Code}.png",
             Url = $"https://leguto.co/" + x.Code,
@@ -105,69 +106,74 @@ public class GuestController : APIControllerBase
         if (!System.IO.File.Exists(baseInvitePath))
             return UnprocessableEntity("No base invite was found");
 
-        string fontPath = "/home/augusto/Raleway/static/Raleway-Regular.ttf";
+        string fontPath = "/home/augustohtpereira/.local/share/fonts/Raleway-Regular.ttf";
 
         var guests = await _guestRepository.SelectAsync();
 
         string file = "";
-        guests.ToList().ForEach(guest => 
+        guests.Where(x => x.Type == "guest").ToList().ForEach(guest => 
         {
             string code = guest.Code;
             string invitePath = Path.Combine(inviteDirName, $"invite-{code}.pdf");
             string qrCodePath = Path.Combine(qrCodeDirName, $"qrcode-{code}.png");
             file = invitePath;
-            
-            System.IO.File.Copy(baseInvitePath, invitePath, true);
 
-            
+            if (!System.IO.File.Exists(qrCodePath))
+            {
+                Console.WriteLine($"Guest {guest.Name} does not have qrcode");
+            }
+            else 
+            {
+                System.IO.File.Copy(baseInvitePath, invitePath, true);
 
-            // Modify PDF located at "source" and save to "target"
-            PdfDocument pdfDocument = new PdfDocument(new PdfReader(baseInvitePath), new PdfWriter(invitePath));
-            // Document to add layout elements: paragraphs, images etc
-            Document document = new Document(pdfDocument);
+                // Modify PDF located at "source" and save to "target"
+                PdfDocument pdfDocument = new PdfDocument(new PdfReader(baseInvitePath), new PdfWriter(invitePath));
+                // Document to add layout elements: paragraphs, images etc
+                Document document = new Document(pdfDocument);
 
-            // Load image from disk
-            ImageData imageData = ImageDataFactory.Create(qrCodePath);
-            // Create layout image object and provide parameters. Page number = 1
-            iText.Layout.Element.Image qrCode = new iText.Layout.Element.Image(imageData);
-            qrCode.SetFixedPosition(194, 60);
-            qrCode.SetWidth(35);
-            qrCode.SetHeight(35);
-            // This adds the image to the page
-            document.Add(qrCode);
+                // Load image from disk
+                ImageData imageData = ImageDataFactory.Create(qrCodePath);
+                // Create layout image object and provide parameters. Page number = 1
+                iText.Layout.Element.Image qrCode = new iText.Layout.Element.Image(imageData);
+                qrCode.SetFixedPosition(194, 60);
+                qrCode.SetWidth(35);
+                qrCode.SetHeight(35);
+                // This adds the image to the page
+                document.Add(qrCode);
 
-            PdfFont font = PdfFontFactory.CreateFont(fontPath, "UTF-8", PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED, pdfDocument);
-            var color = new iText.Kernel.Colors.DeviceRgb(75, 85, 104);
+                PdfFont font = PdfFontFactory.CreateFont(fontPath, "UTF-8", PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED, pdfDocument);
+                var color = new iText.Kernel.Colors.DeviceRgb(75, 85, 104);
 
-            iText.Layout.Element.Paragraph qrCodeLegend = new Paragraph("leguto.co/" + code);
-            qrCodeLegend.SetFixedPosition(92, 50, 235);
-            qrCodeLegend.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
-            qrCodeLegend.SetFontSize(7);
-            qrCodeLegend.SetFont(font);
-            qrCodeLegend.SetFontColor(color);
-            document.Add(qrCodeLegend);
+                iText.Layout.Element.Paragraph qrCodeLegend = new Paragraph("leguto.co/" + code);
+                qrCodeLegend.SetFixedPosition(92, 50, 235);
+                qrCodeLegend.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
+                qrCodeLegend.SetFontSize(7);
+                qrCodeLegend.SetFont(font);
+                qrCodeLegend.SetFontColor(color);
+                document.Add(qrCodeLegend);
 
-            iText.Layout.Element.Paragraph guestName = new Paragraph(RemoveSpecialChars(guest.Name));
-            guestName.SetFixedPosition(92, 41, 235);
-            guestName.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
-            guestName.SetFontSize(7);
-            guestName.SetFont(font);
-            guestName.SetFontColor(color);
-            guestName.SetFontScript(iText.Commons.Utils.UnicodeScript.COPTIC);
-            document.Add(guestName);
+                iText.Layout.Element.Paragraph guestName = new Paragraph(RemoveSpecialChars(guest.Name));
+                guestName.SetFixedPosition(92, 41, 235);
+                guestName.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
+                guestName.SetFontSize(7);
+                guestName.SetFont(font);
+                guestName.SetFontColor(color);
+                guestName.SetFontScript(iText.Commons.Utils.UnicodeScript.COPTIC);
+                document.Add(guestName);
 
-            Console.WriteLine($"Invite to {guest.Name} with code {guest.Code} was successfully generated.");
+                Console.WriteLine($"Invite to {guest.Name} with code {guest.Code} was successfully generated.");
 
-            // Don't forget to close the document.
-            // When you use Document, you should close it rather than PdfDocument instance
-            document.Close();
+                // Don't forget to close the document.
+                // When you use Document, you should close it rather than PdfDocument instance
+                document.Close();
+            }
         });
 
         string mergedFile = Path.Combine(inviteDirName, "all-invites.pdf");
         var pdf = new PdfDocument(new PdfWriter(mergedFile));
         PdfMerger merger = new PdfMerger(pdf);
         
-        guests.ToList().ForEach(guest => {
+        guests.Where(x => x.Type == "guest").ToList().ForEach(guest => {
             string invitePath = Path.Combine(inviteDirName, $"invite-{guest.Code}.pdf");
             var toMerge = new PdfDocument(new PdfReader(invitePath));
             merger.Merge(toMerge, 1, toMerge.GetNumberOfPages());
