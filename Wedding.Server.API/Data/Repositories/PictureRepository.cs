@@ -37,7 +37,10 @@ public class PictureRepository : IPictureRepository
 
     public async Task<IEnumerable<GuestPicture>> SelectAllByGuestAsync(int guestId, bool onlyPublic)
     {
-        return await _context.GuestPictures.Where(x => x.Guest.Id.Equals(guestId) && (onlyPublic && x.Public == true)).ToListAsync();
+        if (onlyPublic)
+            return await _context.GuestPictures.Include(x => x.Guest).Where(x => x.Guest.Id.Equals(guestId) && x.Public == true).ToListAsync();
+        else
+            return await _context.GuestPictures.Include(x => x.Guest).Where(x => x.Guest.Id.Equals(guestId)).ToListAsync();
     }
 
     public async Task<GuestPicture> SelectAsync(int id)

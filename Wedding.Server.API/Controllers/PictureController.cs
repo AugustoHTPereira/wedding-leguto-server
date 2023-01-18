@@ -95,7 +95,6 @@ public class PictureController : APIControllerBase
     protected async Task<IActionResult> OnGetGuestPictures(int guestId, bool onlyPublic)
     {
         var pictures = await _pictureRepository.SelectAllByGuestAsync(guestId, onlyPublic);
-
         IList<PictureResponse> resp = new List<PictureResponse>();
         foreach (var picture in pictures)
         {
@@ -105,6 +104,7 @@ public class PictureController : APIControllerBase
                 Owner = picture.Guest.Name,
                 OriginalUrl = originalUrl,
                 Id = picture.Id,
+                Public = picture.Public
             };
             
             resp.Add(pr);
