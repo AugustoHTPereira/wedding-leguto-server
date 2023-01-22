@@ -54,4 +54,23 @@ public class GiftController : APIControllerBase
         await _giftRepository.UpdateAsync(gift);
         return Ok();
     }
+
+    [Authorize]
+    [HttpDelete("{giftId:int}/Take")]
+    public async Task<IActionResult> OnUntakeGift([FromRoute] int giftId)
+    {
+        var gift = await _giftRepository.SelectAsync(giftId);
+        if (gift == null)
+            return NotFound();
+
+        var guest = await _guestRepository.SelectAsync(Id);
+        if (guest == null)
+            return NotFound();
+
+        gift.Guests = gift.Guests ?? new List<Guest>();
+        gift.Guests.Remove(guest);
+
+        await _giftRepository.UpdateAsync(gift);
+        return Ok();
+    }
 }
