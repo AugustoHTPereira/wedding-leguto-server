@@ -73,4 +73,21 @@ public class GiftController : APIControllerBase
         await _giftRepository.UpdateAsync(gift);
         return Ok();
     }
+
+    [Authorize]
+    [HttpGet("Take")]
+    public async Task<IActionResult> OnGetTakedGifts()
+    {
+        var guestGifts = await _giftRepository.SelectAllByGuestAsync(Id);
+        if (guestGifts == null)
+            return NotFound();
+
+        return Ok(guestGifts.Select(x => new GiftViewModel {
+            Id = x.Id,
+            Link = x.Link,
+            Obtained = x.Guests?.Any() ?? false,
+            Title = x.Title,
+            Store = x.Store
+        }));
+    }
 }

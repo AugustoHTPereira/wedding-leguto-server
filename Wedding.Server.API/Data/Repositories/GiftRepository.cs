@@ -6,6 +6,7 @@ namespace Wedding.Server.API.Data.Repositories;
 public interface IGiftRepository
 {
     Task<IEnumerable<Gift>> SelectAsync();
+    Task<IEnumerable<Gift>> SelectAllByGuestAsync(int guestId);
     Task<Gift> SelectAsync(int id);
     Task UpdateAsync(Gift gift);
 }
@@ -18,6 +19,11 @@ public class GiftRepository : IGiftRepository
     public GiftRepository(ApplicationDbContext context) 
     {
         _context = context;
+    }
+
+    public async Task<IEnumerable<Gift>> SelectAllByGuestAsync(int guestId)
+    {
+        return await _context.Gifts.Include(x => x.Guests).Where(x => x.Guests.Any(y => y.Id == guestId)).ToListAsync();
     }
 
     public async Task<IEnumerable<Gift>> SelectAsync()
