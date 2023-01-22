@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Guest> Guests { get; set; }
     public DbSet<GuestPicture> GuestPictures { get; set; }
+    public DbSet<Gift> Gifts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

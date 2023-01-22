@@ -7,6 +7,7 @@ namespace Wedding.Server.API.Data.Repositories;
 
 public interface IGuestRepository
 {
+    Task<Guest?> SelectAsync(int id);
     Task<Guest?> SelectAsync(string code);
     Task<IEnumerable<Guest>> SelectAsync();
 }
@@ -28,5 +29,10 @@ public class GuestRepository : IGuestRepository
     public async Task<IEnumerable<Guest>> SelectAsync()
     {
         return await _context.Guests.ToListAsync();
+    }
+
+    public async Task<Guest?> SelectAsync(int id)
+    {
+        return await _context.Guests.FindAsync(id);
     }
 }

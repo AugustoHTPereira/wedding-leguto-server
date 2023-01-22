@@ -10,6 +10,7 @@ public static class Bootstrapper
     {
         services.AddScoped<IGuestRepository, GuestRepository>();
         services.AddScoped<IPictureRepository, PictureRepository>();
+        services.AddScoped<IGiftRepository, GiftRepository>();
     }
 
     public static void AddApplicationServices(this IServiceCollection services)
