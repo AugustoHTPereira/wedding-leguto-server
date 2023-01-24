@@ -27,8 +27,29 @@ public class GiftController : APIControllerBase
                 Link = x.Link,
                 Obtained = x.Guests?.Any() ?? false,
                 Title = x.Title,
-                Store = x.Store
+                Store = x.Store,
+                Type = x.Type,
+                Metadata = x.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value))
             }));
+    }
+
+    [HttpGet("{giftId:int}")]
+    public async Task<IActionResult> OnGetGiftDetails([FromRoute] int giftId)
+    {
+        var gift = await _giftRepository.SelectAsync(giftId);
+        if (gift == null)
+            return NotFound();
+
+        return Ok(new {
+            obtained = gift.Guests != null && gift.Guests.Any(),
+            gift.Id,
+            gift.Link,
+            gift.Title,
+            gift.Store,
+            GuestsId = gift.Guests?.Select(x => x.Id),
+            Type = gift.Type,
+            Metadata = gift.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value))
+        });
     }
 
     [Authorize]

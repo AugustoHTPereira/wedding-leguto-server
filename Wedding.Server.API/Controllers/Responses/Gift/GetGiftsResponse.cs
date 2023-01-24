@@ -14,4 +14,6 @@ public class GiftViewModel
     public string Link { get; set; }
     public string Store { get; set; }
     public bool Obtained { get; set; }
+    public string Type { get; set; }
+    public IEnumerable<KeyValuePair<string, string>> Metadata { get; set; }
 }
