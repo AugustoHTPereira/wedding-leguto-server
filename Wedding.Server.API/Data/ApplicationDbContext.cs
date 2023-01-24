@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<GuestPicture> GuestPictures { get; set; }
     public DbSet<Gift> Gifts { get; set; }
     public DbSet<Historic> Historical { get; set; }
+    public DbSet<GiftMedia> GiftMedias { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

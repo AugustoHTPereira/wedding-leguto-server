@@ -23,17 +23,17 @@ public class GiftRepository : IGiftRepository
 
     public async Task<IEnumerable<Gift>> SelectAllByGuestAsync(int guestId)
     {
-        return await _context.Gifts.Include(x => x.Guests).Where(x => x.Guests.Any(y => y.Id == guestId)).ToListAsync();
+        return await _context.Gifts.Include(x => x.Guests).Include(x => x.Media).Where(x => x.Guests.Any(y => y.Id == guestId)).ToListAsync();
     }
 
     public async Task<IEnumerable<Gift>> SelectAsync()
     {
-        return await _context.Gifts.Include(x => x.Metadata).Include(x => x.Guests).ToListAsync();
+        return await _context.Gifts.Include(x => x.Metadata).Include(x => x.Media).Include(x => x.Guests).ToListAsync();
     }
 
     public async Task<Gift> SelectAsync(int id)
     {
-        return await _context.Gifts.Include(x => x.Guests).Include(x => x.Metadata).FirstOrDefaultAsync(x => x.Id == id);
+        return await _context.Gifts.Include(x => x.Guests).Include(x => x.Media).Include(x => x.Metadata).FirstOrDefaultAsync(x => x.Id == id);
     }
 
     public async Task UpdateAsync(Gift gift)

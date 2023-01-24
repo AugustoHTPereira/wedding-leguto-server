@@ -10,4 +10,13 @@ public class Gift
 
     public IList<GiftMetadata>? Metadata { get; set; }
     public IList<Guest>? Guests { get; set; }
+    public IList<GiftMedia> Media { get; set; }
+}
+
+public class GiftMedia
+{
+    public int Id { get; set; }
+    public Gift Gift { get; set; }
+    public string Url { get; set; }
+    public string Type { get; set; }
 }
