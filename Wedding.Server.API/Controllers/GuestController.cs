@@ -22,13 +22,15 @@ public class GuestController : APIControllerBase
 {
     private readonly ITokenService _tokenService;
     private readonly IGuestRepository _guestRepository;
+    private readonly IGuestAccessRepository _guestAccessRepository;
 
-    public GuestController(IGuestRepository guestRepository, ITokenService tokenService)
+    public GuestController(IGuestRepository guestRepository, ITokenService tokenService, IGuestAccessRepository guestAccessRepository)
     {
         _guestRepository = guestRepository;
         _tokenService = tokenService;
+        _guestAccessRepository = guestAccessRepository;
     }
-    
+
     [Authorize]
     [HttpGet("{code}")]
     [Produces("application/json")]
@@ -55,6 +57,7 @@ public class GuestController : APIControllerBase
             return NotFoundResponse.CreateResponse();
 
         var token = _tokenService.CreateAccessToken(guest);
+        await _guestAccessRepository.Insert(new GuestAccess { Guest = guest, CreatedAt = DateTime.Now });
         return Ok(new GuestLoginResponse { AccessToken = token });
     }
 

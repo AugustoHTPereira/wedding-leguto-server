@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Wedding.Server.API.Data;
 
@@ -11,9 +12,11 @@ using Wedding.Server.API.Data;
 namespace Wedding.Server.API.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230124003242_GuestAccessMigration")]
+    partial class GuestAccessMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -175,34 +178,6 @@ namespace Wedding.Server.API.Data.Migrations
                     b.HasIndex("GuestId");
 
                     b.ToTable("GuestPictures");
-                });
-
-            modelBuilder.Entity("Wedding.Server.API.Models.Historic", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AditionalData")
-                        .IsRequired()
-                        .HasColumnType("VARCHAR(MAX)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("DATETIME");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("VARCHAR(150)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Historical");
                 });
 
             modelBuilder.Entity("GiftGuest", b =>
