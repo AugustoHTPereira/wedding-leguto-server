@@ -27,7 +27,7 @@ jobs:
     - name: Publish
       uses: SamKirkland/FTP-Deploy-Action@4.3.3
       with:
-        server: leguto.somee.com/www.leguto.somee.com
+        server: 198.37.116.29/www.leguto.somee.com
         server-dir: wwwroot/
         username: augustohtpereira
         password: ${{ secrets.ftp_password }}
