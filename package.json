@@ -6,7 +6,7 @@
   "author": "Augusto Pereira <augustohtp8@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "dev": "export ASPNETCORE_ENVIRONMENT=Development && dotnet watch run --project Wedding.Server.API",
+    "dev": "export ASPNETCORE_ENVIRONMENT=Development && dotnet watch run --project Wedding.Server.APIs",
     "start": "export ASPNETCORE_ENVIRONMENT=Production && dotnet watch run --project Wedding.Server.API"
   }
 }
