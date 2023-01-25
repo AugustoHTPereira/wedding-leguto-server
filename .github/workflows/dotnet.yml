@@ -25,10 +25,13 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Publish
+      run: dotnet publish -o ./out -c Release --project ./Wedding.Server.API
+    - name: Deploy
       uses: SamKirkland/FTP-Deploy-Action@4.3.3
       with:
         server: 198.37.116.29
         server-dir: www.leguto.somee.com/wwwroot/
+        local-dir: ./out
         username: augustohtpereira
         password: ${{ secrets.ftp_password }}
 
