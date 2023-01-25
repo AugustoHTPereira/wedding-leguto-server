@@ -32,7 +32,8 @@ public class GiftController : APIControllerBase
             Title = x.Title,
             Store = x.Store,
             Type = x.Type,
-            Metadata = x.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value))
+            Metadata = x.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value)),
+            Pictures = x.Media.Select(x => x.Url),
         }));
     }
 
@@ -42,22 +43,6 @@ public class GiftController : APIControllerBase
         var gift = await _giftRepository.SelectAsync(giftId);
         if (gift == null)
             return NotFound();
-
-        string[] pictureUrls = null;
-        if (!string.IsNullOrEmpty(gift.Link) && (gift.Media == null || !gift.Media.Any()))
-        {
-            gift.Media = gift.Media ?? new List<GiftMedia>();
-            pictureUrls = await CrawlPictures(gift);
-            if (pictureUrls != null && pictureUrls.Length > 0)
-            {
-                for (int i = 0; i < pictureUrls.Length; i++)
-                {
-                    gift.Media.Add(new GiftMedia { Gift = gift, Type = "photo", Url = pictureUrls[i] });
-                }
-
-                await _giftRepository.UpdateAsync(gift);
-            }
-        }
 
         return Ok(new
         {
@@ -69,7 +54,7 @@ public class GiftController : APIControllerBase
             GuestsId = gift.Guests?.Select(x => x.Id),
             Type = gift.Type,
             Metadata = gift.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value)),
-            pictures = pictureUrls,
+            Pictures = gift.Media.Select(x => x.Url),
         });
     }
 
