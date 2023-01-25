@@ -1,5 +1,7 @@
+using AngleSharp;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Xml.Linq;
 using Wedding.Server.API.Controllers.Base;
 using Wedding.Server.API.Controllers.Responses.Gift;
 using Wedding.Server.API.Data.Repositories;
@@ -19,18 +21,19 @@ public class GiftController : APIControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> OnGetGifts() 
+    public async Task<IActionResult> OnGetGifts()
     {
         var gifts = await _giftRepository.SelectAsync();
-        return Ok(gifts.Select(x => new GiftViewModel {
-                Id = x.Id,
-                Link = x.Link,
-                Obtained = x.Guests?.Any() ?? false,
-                Title = x.Title,
-                Store = x.Store,
-                Type = x.Type,
-                Metadata = x.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value))
-            }));
+        return Ok(gifts.Select(x => new GiftViewModel
+        {
+            Id = x.Id,
+            Link = x.Link,
+            Obtained = x.Guests?.Any() ?? false,
+            Title = x.Title,
+            Store = x.Store,
+            Type = x.Type,
+            Metadata = x.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value))
+        }));
     }
 
     [HttpGet("{giftId:int}")]
@@ -40,7 +43,24 @@ public class GiftController : APIControllerBase
         if (gift == null)
             return NotFound();
 
-        return Ok(new {
+        string[] pictureUrls = null;
+        if (!string.IsNullOrEmpty(gift.Link) && (gift.Media == null || !gift.Media.Any()))
+        {
+            gift.Media = gift.Media ?? new List<GiftMedia>();
+            pictureUrls = await CrawlPictures(gift);
+            if (pictureUrls != null && pictureUrls.Length > 0)
+            {
+                for (int i = 0; i < pictureUrls.Length; i++)
+                {
+                    gift.Media.Add(new GiftMedia { Gift = gift, Type = "photo", Url = pictureUrls[i] });
+                }
+
+                await _giftRepository.UpdateAsync(gift);
+            }
+        }
+
+        return Ok(new
+        {
             obtained = gift.Guests != null && gift.Guests.Any(),
             gift.Id,
             gift.Link,
@@ -48,7 +68,8 @@ public class GiftController : APIControllerBase
             gift.Store,
             GuestsId = gift.Guests?.Select(x => x.Id),
             Type = gift.Type,
-            Metadata = gift.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value))
+            Metadata = gift.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value)),
+            pictures = pictureUrls,
         });
     }
 
@@ -65,7 +86,8 @@ public class GiftController : APIControllerBase
             return NotFound();
 
         if (gift.Guests != null && gift.Guests.Any())
-            return BadRequest(new {
+            return BadRequest(new
+            {
                 message = "Gift was taken",
             });
 
@@ -103,12 +125,33 @@ public class GiftController : APIControllerBase
         if (guestGifts == null)
             return NotFound();
 
-        return Ok(guestGifts.Select(x => new GiftViewModel {
+        return Ok(guestGifts.Select(x => new GiftViewModel
+        {
             Id = x.Id,
             Link = x.Link,
             Obtained = x.Guests?.Any() ?? false,
             Title = x.Title,
             Store = x.Store
         }));
+    }
+
+    protected async Task<string[]> CrawlPictures(Gift gift)
+    {
+        var client = new HttpClient();
+        var response = await client.GetAsync(gift.Link);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var context = BrowsingContext.New(Configuration.Default);
+        var document = await context.OpenAsync(req => req.Content(responseContent));
+
+        IList<string> pictureUrls = new List<string>();
+
+        if (gift.Store == "AMAZON")
+        {
+            var image = document.Body.QuerySelectorAll("*").FirstOrDefault(x => x.Id == "landingImage")?.Attributes["src"];
+            if (image != null)
+                pictureUrls.Add(image.Value);
+        }
+
+        return pictureUrls.ToArray();
     }
 }
