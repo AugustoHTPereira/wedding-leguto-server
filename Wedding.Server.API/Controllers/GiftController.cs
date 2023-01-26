@@ -34,6 +34,7 @@ public class GiftController : APIControllerBase
             Type = x.Type,
             Metadata = x.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value)),
             Pictures = x.Media.Select(x => x.Url),
+            Category = x.Category,
         }));
     }
 
@@ -55,6 +56,7 @@ public class GiftController : APIControllerBase
             Type = gift.Type,
             Metadata = gift.Metadata.Select(y => new KeyValuePair<string, string>(y.Key, y.Value)),
             Pictures = gift.Media.Select(x => x.Url),
+            gift.Category,
         });
     }
 
