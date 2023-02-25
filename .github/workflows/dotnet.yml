@@ -29,14 +29,14 @@ jobs:
       run: dotnet build --no-restore
     
     - name: Publish
-      run: dotnet publish -o ./out -c Release -f net6.0
+      run: dotnet publish -c Release
     
     - name: Deploy
       uses: SamKirkland/FTP-Deploy-Action@4.3.3
       with:
         server: 198.37.116.29
         server-dir: www.leguto.somee.com/
-        local-dir: ./out/
+        local-dir: ./Wedding.Server.API/bin/Release/net6.0/publish/
         username: augustohtpereira
         password: ${{ secrets.ftp_password }}
 
