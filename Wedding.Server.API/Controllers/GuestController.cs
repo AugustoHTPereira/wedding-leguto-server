@@ -98,18 +98,27 @@ public class GuestController : APIControllerBase
     {
         string qrCodeDirName = Path.Combine(Directory.GetCurrentDirectory(), "qrcodes");
         string inviteDirName = Path.Combine(Directory.GetCurrentDirectory(), "invites");
-        var qrCodes = Directory.GetFiles(qrCodeDirName);
-        if (!qrCodes?.Any() ?? false)
-            return UnprocessableEntity("No qr code was found");
             
+        // Ensure directory created
         if (!Directory.Exists(inviteDirName))
             Directory.CreateDirectory(inviteDirName);
+        if (!Directory.Exists(qrCodeDirName))
+            Directory.CreateDirectory(qrCodeDirName);
 
         string baseInvitePath = Path.Combine(inviteDirName, "wedding-invite.pdf");
         if (!System.IO.File.Exists(baseInvitePath))
             return UnprocessableEntity("No base invite was found at " + baseInvitePath);
 
         var guests = await _guestRepository.SelectAsync();
+
+        // Validate duplicated codes
+        var duplicated = guests.Where(x => guests.Count(y => y.Code == x.Code) > 1);
+        if (duplicated != null && duplicated.Count() > 0)
+        {
+            Console.WriteLine($"{duplicated.Count()} duplicated invites was found.");
+            duplicated.ToList().ForEach(x => Console.WriteLine($"!! {x.Code} is duplicated. !!"));
+            return UnprocessableEntity($"{duplicated.Count()} duplicated invites was found.");
+        }
 
         string file = "";
         guests.Where(x => x.Type == "guest").ToList().ForEach(guest => 
@@ -121,64 +130,71 @@ public class GuestController : APIControllerBase
 
             if (!System.IO.File.Exists(qrCodePath))
             {
-                Console.WriteLine($"Guest {guest.Name} does not have qrcode");
+                Console.WriteLine($"Guest {guest.Name} does not have qrcode. Generating qrcode for guest code {code}.");
+                GenerateQRCode($"https://leguto.co/" + code, qrCodePath);
             }
-            else 
+            
+            System.IO.File.Copy(baseInvitePath, invitePath, true);
+
+            // Modify PDF located at "source" and save to "target"
+            PdfDocument pdfDocument = new PdfDocument(new PdfReader(baseInvitePath), new PdfWriter(invitePath));
+            // Document to add layout elements: paragraphs, images etc
+            Document document = new Document(pdfDocument);
+
+            PdfFont fontLink = PdfFontFactory.CreateFont("/home/augusto/.local/share/fonts/Raleway-Regular.ttf", "UTF-8", PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED, pdfDocument);
+            PdfFont fontGuestName = PdfFontFactory.CreateFont("/home/augusto/.local/share/fonts/Raleway-SemiBold.ttf", "UTF-8", PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED, pdfDocument);
+
+            // Load image from disk
+            ImageData imageData = ImageDataFactory.Create(qrCodePath);
+            // Create layout image object and provide parameters. Page number = 1
+            iText.Layout.Element.Image qrCode = new iText.Layout.Element.Image(imageData);
+            qrCode.SetFixedPosition(194, 60);
+            qrCode.SetWidth(35);
+            qrCode.SetHeight(35);
+            // This adds the image to the page
+            document.Add(qrCode);
+
+            iText.Layout.Element.Paragraph qrCodeLegend = new Paragraph("leguto.co/" + code);
+            qrCodeLegend.SetFixedPosition(92, 50, 235);
+            qrCodeLegend.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
+            qrCodeLegend.SetFontSize(7);
+            qrCodeLegend.SetFont(fontLink);
+            document.Add(qrCodeLegend);
+
+            if (guest.Extensive)
             {
-                System.IO.File.Copy(baseInvitePath, invitePath, true);
-
-                // Modify PDF located at "source" and save to "target"
-                PdfDocument pdfDocument = new PdfDocument(new PdfReader(baseInvitePath), new PdfWriter(invitePath));
-                // Document to add layout elements: paragraphs, images etc
-                Document document = new Document(pdfDocument);
-
-                PdfFont fontLink = PdfFontFactory.CreateFont("/home/augusto/.local/share/fonts/Raleway-Regular.ttf", "UTF-8", PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED, pdfDocument);
-                PdfFont fontGuestName = PdfFontFactory.CreateFont("/home/augusto/.local/share/fonts/Raleway-SemiBold.ttf", "UTF-8", PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED, pdfDocument);
-
-                // Load image from disk
-                ImageData imageData = ImageDataFactory.Create(qrCodePath);
-                // Create layout image object and provide parameters. Page number = 1
-                iText.Layout.Element.Image qrCode = new iText.Layout.Element.Image(imageData);
-                qrCode.SetFixedPosition(194, 60);
-                qrCode.SetWidth(35);
-                qrCode.SetHeight(35);
-                // This adds the image to the page
-                document.Add(qrCode);
-
-                
-
-                iText.Layout.Element.Paragraph qrCodeLegend = new Paragraph("leguto.co/" + code);
-                qrCodeLegend.SetFixedPosition(92, 50, 235);
-                qrCodeLegend.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
-                qrCodeLegend.SetFontSize(7);
-                qrCodeLegend.SetFont(fontLink);
-                document.Add(qrCodeLegend);
-
-                iText.Layout.Element.Paragraph guestName = new Paragraph(RemoveSpecialChars(guest.Name).Replace(" EXTENSIVO AOS FILHOS CASADOS", ""));
+                iText.Layout.Element.Paragraph guestName = new Paragraph(RemoveSpecialChars(guest.Name));
                 guestName.SetFixedPosition(15, 36, 390);
                 guestName.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
                 guestName.SetFontSize(8);
                 guestName.SetFont(fontGuestName);
                 guestName.SetFontScript(iText.Commons.Utils.UnicodeScript.COPTIC);
                 document.Add(guestName);
-
-                if (guest.Name.Contains("EXTENSIVO AOS FILHOS CASADOS"))
-                {
-                    iText.Layout.Element.Paragraph extensivo = new Paragraph("EXTENSIVO AOS FILHOS CASADOS");
-                    extensivo.SetFixedPosition(15, 28, 390);
-                    extensivo.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
-                    extensivo.SetFontSize(7);
-                    extensivo.SetFont(fontLink);
-                    extensivo.SetFontScript(iText.Commons.Utils.UnicodeScript.COPTIC);
-                    document.Add(extensivo);
-                }
-
-                Console.WriteLine($"Invite to {guest.Name} with code {guest.Code} was successfully generated.");
-
-                // Don't forget to close the document.
-                // When you use Document, you should close it rather than PdfDocument instance
-                document.Close();
+            
+                iText.Layout.Element.Paragraph extensivo = new Paragraph("EXTENSIVO AOS FILHOS CASADOS");
+                extensivo.SetFixedPosition(15, 28, 390);
+                extensivo.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
+                extensivo.SetFontSize(7);
+                extensivo.SetFont(fontLink);
+                extensivo.SetFontScript(iText.Commons.Utils.UnicodeScript.COPTIC);
+                document.Add(extensivo);
             }
+            else
+            {
+                iText.Layout.Element.Paragraph guestName = new Paragraph(RemoveSpecialChars(guest.Name));
+                guestName.SetFixedPosition(15, 38, 390);
+                guestName.SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER);
+                guestName.SetFontSize(8);
+                guestName.SetFont(fontGuestName);
+                guestName.SetFontScript(iText.Commons.Utils.UnicodeScript.COPTIC);
+                document.Add(guestName);
+            }
+
+            Console.WriteLine($"Invite to {guest.Name} with code {guest.Code} was successfully generated.");
+
+            // Don't forget to close the document.
+            // When you use Document, you should close it rather than PdfDocument instance
+            document.Close();
         });
 
         string mergedFile = Path.Combine(inviteDirName, "all-invites.pdf");
