@@ -29,6 +29,7 @@ public class GiftController : APIControllerBase
             Id = x.Id,
             Link = x.Link,
             Obtained = x.Guests?.Any() ?? false,
+            ObtainedByMe = x.Guests?.Any(y => y.Id == Id) ?? false,
             Title = x.Title,
             Store = x.Store,
             Type = x.Type,
