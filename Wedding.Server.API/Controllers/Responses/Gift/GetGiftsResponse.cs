@@ -16,6 +16,7 @@ public class GiftViewModel
     public bool Obtained { get; set; }
     public bool? ObtainedByMe { get; set; }
     public string Type { get; set; }
+    public string Category { get; set; }
     public IEnumerable<KeyValuePair<string, string>> Metadata { get; set; }
     public IEnumerable<string> Pictures { get; set; }
 }

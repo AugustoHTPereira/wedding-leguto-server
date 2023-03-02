@@ -13,5 +13,6 @@ public class GiftTypeConfiguration : IEntityTypeConfiguration<Gift>
         builder.Property(x => x.Link).HasColumnType("varchar(255)");
         builder.Property(x => x.Store).HasColumnType("varchar(255)");
         builder.Property(x => x.Type).HasColumnType("varchar(255)");
+        builder.Property(x => x.Category).HasColumnType("varchar(255)");
     }
 }

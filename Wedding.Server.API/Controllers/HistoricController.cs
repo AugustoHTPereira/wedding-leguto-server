@@ -24,7 +24,7 @@ public class HistoricController : APIControllerBase
         var model = new Historic
         {
             AditionalData = aditionalData ?? "",
-            CreatedAt = DateTime.Now,
+            CreatedAt = DateTime.UtcNow,
             Message = message ?? "",
             Type = type,
         };
