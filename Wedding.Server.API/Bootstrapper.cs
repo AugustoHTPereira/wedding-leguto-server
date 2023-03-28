@@ -19,5 +19,6 @@ public static class Bootstrapper
     {
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IStorageService, S3StorageService>();
+        services.AddScoped<IInvitementService, InvitementService>();
     }
 }
